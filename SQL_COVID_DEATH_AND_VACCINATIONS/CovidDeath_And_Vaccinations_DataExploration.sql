@@ -1,3 +1,11 @@
+--Count the number of rows in the Covid death table
+SELECT COUNT(*)
+FROM [PORTFOLIO PROJECT]..coviddeaths
+
+--Count the number of rows in the Covid vaccination table
+ SELECT COUNT(*)
+ FROM [PORTFOLIO PROJECT]..covidvaccinations
+
 --Checking the general data from the covid deaths table
 SELECT *
 FROM [PORTFOLIO PROJECT]..coviddeaths
@@ -12,18 +20,18 @@ SELECT location, date, total_cases, new_cases, new_deaths, population
 FROM [PORTFOLIO PROJECT]..coviddeaths
 ORDER BY 1,2
 
--- calculating death percentage in different locations using data from covid death table in ascending order
+-- calculating death percentage in different Countries using data from covid death table in ascending order
 SELECT location, date, total_cases, new_deaths, population, (new_deaths/ population) * 100 as death_percentage
 FROM [PORTFOLIO PROJECT]..coviddeaths
 ORDER BY 1,2
 
--- Calculating new cases data  vs new deaths data, percentage in different locations using data from the  covid death table
+-- Calculating new cases data  vs new deaths data, percentage in different Countries using data from the  covid death table
 SELECT location, new_cases, new_deaths, population, (new_deaths/ new_cases) * 100 as newcase_newdeath_percentage
 FROM [PORTFOLIO PROJECT]..coviddeaths
 ORDER BY 1,2
 
 
--- Showing Data on location with the highest death rate and death percentage
+-- Showing Data on Countries with the highest death rate and death percentage
 SELECT location, MAX(new_deaths) as deathrate, population, MAX((new_deaths/ population)) * 100 as death_percentage
 FROM [PORTFOLIO PROJECT]..coviddeaths
 WHERE continent is NOT NULL
@@ -48,7 +56,7 @@ FROM [PORTFOLIO PROJECT]..coviddeaths
 WHERE continent is NOT NULL
 ORDER BY 1,2
 
---Retrieving data from new tests vs positive rates and the percentage of positive rates based on location
+--Retrieving data from new tests vs positive rates and the percentage of positive rates based on Countries.
 SELECT location, continent, date, new_tests, positive_rate, (positive_rate / new_tests) * 100 as positiveratepercentage
 FROM [PORTFOLIO PROJECT]..covidvaccinations
 WHERE continent is NOT NULL
@@ -62,7 +70,7 @@ ON dea.location = vac.location
 AND dea.date = vac.date
 ORDER BY 3,4
 
---The query shows data on total population vs people vaccinated.
+--The query shows data on total population vs people vaccinated in different Countries
 SELECT dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations
 FROM [PORTFOLIO PROJECT]..coviddeaths dea
 JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
@@ -71,7 +79,7 @@ AND dea.date = vac.date
 WHERE dea.continent is NOT NULL
 ORDER BY 3,4
 
---This query shows the total number of people vaccinated Globally in a rolling count.
+--This query shows the total number of people vaccinated Globally in a rolling count per day.
 SELECT dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations, 
 SUM(CONVERT(int, vac.new_vaccinations)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) as Rollingpeople_vaccinated
 FROM [PORTFOLIO PROJECT]..coviddeaths dea
