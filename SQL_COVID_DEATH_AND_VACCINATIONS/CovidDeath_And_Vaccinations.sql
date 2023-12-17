@@ -2,10 +2,10 @@
 SELECT *
 FROM [PORTFOLIO PROJECT]..coviddeaths
 
--- Checking the general data from the covid vaccination table in ascending order. The default order for ORDER BY statement is ASCENDING ORDER
+-- Checking the general data from the covid vaccination table in ascending order.
 SELECT *
 FROM [PORTFOLIO PROJECT]..covidvaccinations
-ORDER BY 1,2
+ORDER BY 1,2 --The default order for order by statement is the ascending order
 
 --Checking covid deaths data with specified columns in the covid death table by ascending order
 SELECT location, date, total_cases, new_cases, new_deaths, population
@@ -42,59 +42,58 @@ FROM [PORTFOLIO PROJECT]..coviddeaths
 GROUP BY date
 ORDER BY totalglobaldeaths DESC
 
---Global numbers
-select SUM(new_cases) as totalglobalcases, SUM(cast(new_deaths as int)) as totalglobaldeathcase, SUM(cast(new_deaths as int))/SUM(new_cases) * 100 as deathpercentage
-from [PORTFOLIO PROJECT]..coviddeaths
-where continent is not NULL
-order by 1,2
+--Showing data based on Global numbers
+SELECT SUM(new_cases) as totalglobalcases, SUM(cast(new_deaths as int)) as totalglobaldeathcase, SUM(cast(new_deaths as int))/SUM(new_cases) * 100 as deathpercentage
+FROM [PORTFOLIO PROJECT]..coviddeaths
+WHERE continent is NOT NULL
+ORDER BY 1,2
 
---Retrieving data from new tests vs positive rates 
-select location, continent, date, new_tests, positive_rate, (positive_rate / new_tests) * 100 as positiveratepercentage
-from [PORTFOLIO PROJECT]..covidvaccinations
-where continent is not NULL
-order by 1,2
+--Retrieving data from new tests vs positive rates and the percentage of positive rates based on location
+SELECT location, continent, date, new_tests, positive_rate, (positive_rate / new_tests) * 100 as positiveratepercentage
+FROM [PORTFOLIO PROJECT]..covidvaccinations
+WHERE continent is NOT NULL
+ORDER BY 1,2
 
---data containing covid death and covid vaccinations
-select *
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-order by 3,4
+--This query shows all datas containing covid death and covid vaccinations
+SELECT *
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+ORDER BY 3,4
 
---data on total population vs people vaccinated
-select dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-where dea.continent is not NULL
-order by 3,4
+--The query shows data on total population vs people vaccinated.
+SELECT dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent is NOT NULL
+ORDER BY 3,4
 
---
-select dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-where dea.continent is not NULL
-order by 3,4
+--This query shows the total number of people vaccinated Globally in a rolling count.
+SELECT dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations, 
+SUM(CONVERT(int, vac.new_vaccinations)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) as Rollingpeople_vaccinated
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent is NOT NULL
+ORDER BY 3,4
 
---Get the percentage of the rolling people vaccinated vs population
---using CTE
+--Get the percentage of the rolling people vaccinated vs population using CTE
+-- We will take the query for total number of people vaccinated globally in a rolling count (line 75 to 82) as our subquery.
 
-With vac_pop (location, continent, date, population, new_vaccinations, rollingpeoplevaccinated)
+WITH vac_pop (location, continent, date, population, new_vaccinations, Rollingpeople_vaccinated)
 as
-(
-select dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-where dea.continent is not NULL
-)
-select *, (rollingpeoplevaccinated/ population) * 100 as vacpercentage
-from vac_pop
+( SELECT dea.location, dea.continent, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+ dea.continent is NOT NULL)
+SELECT *, (rollingpeoplevaccinated/ population) * 100 as vac_percentage
+FROM vac_pop
 
 --TEMP TABLE
 DROP TABLE if exists #vaccinatedpeoplepercentage
@@ -108,35 +107,36 @@ New_vaccinations numeric,
 Rollingpeoplevaccinated numeric
 )
 
-insert into #vaccinatedpeoplepercentage
-select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-where dea.continent is not NULL
+-- Insert data into the Temp Table
+INSERT INTO #vaccinatedpeoplepercentage
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent is NOT NULL
 
-select *, (Rollingpeoplevaccinated/population) * 100 as vacpeopleper
-from #vaccinatedpeoplepercentage
+--This query shows the percentage of people vaccinated using the temp table.
+SELECT *, (Rollingpeoplevaccinated/population) * 100 as vacpeople_percentage
+FROM #vaccinatedpeoplepercentage
 
---create view to store data for visualization
+--create view to store data for visualization for the percentage of vaccinated people
+CREATE VIEW vaccinatedpeoplepercentage as
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
+FROM [PORTFOLIO PROJECT]..coviddeaths dea
+JOIN [PORTFOLIO PROJECT]..covidvaccinations vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent is NOT NULL
 
-create view vaccinatedpeoplepercentage as
-select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations, SUM(CONVERT(int, vac.new_vaccinations)) OVER (partition by dea.location order by dea.location, dea.date) as rollingpeoplevaccinated
-from [PORTFOLIO PROJECT]..coviddeaths dea
-join [PORTFOLIO PROJECT]..covidvaccinations vac
-on dea.location = vac.location
-and dea.date = vac.date
-where dea.continent is not NULL
-
+--Create view to store data for visualization for the global new cases vs global new deaths
 CREATE VIEW globalnewcasesvsglobalnewdeaths as
-select date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobaldeaths
-from [PORTFOLIO PROJECT]..coviddeaths
-group by date
---order by 1,2
+SELECT date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobaldeaths
+FROM [PORTFOLIO PROJECT]..coviddeaths
+GROUP BY date
 
+--Create view to store visualization for the Global number of Covid cases.
 CREATE VIEW Global_numbers as
-select SUM(new_cases) as totalglobalcases, SUM(cast(new_deaths as int)) as totalglobaldeathcase, SUM(cast(new_deaths as int))/SUM(new_cases) * 100 as deathpercentage
-from [PORTFOLIO PROJECT]..coviddeaths
-where continent is not NULL
---order by 1,2
+SELECT SUM(new_cases) as totalglobalcases, SUM(cast(new_deaths as int)) as totalglobaldeathcase, SUM(cast(new_deaths as int))/SUM(new_cases) * 100 as deathpercentage
+FROM [PORTFOLIO PROJECT]..coviddeaths
+WHERE continent is NOT NULL
