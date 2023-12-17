@@ -1,44 +1,46 @@
-select *
-from [PORTFOLIO PROJECT]..coviddeaths
+--Checking the general data from the covid deaths table
+SELECT *
+FROM [PORTFOLIO PROJECT]..coviddeaths
 
-select *
-from [PORTFOLIO PROJECT]..covidvaccinations
-order by 1,2
+-- Checking the general data from the covid vaccination table in ascending order. The default order for ORDER BY statement is ASCENDING ORDER
+SELECT *
+FROM [PORTFOLIO PROJECT]..covidvaccinations
+ORDER BY 1,2
 
---Checking covid deaths data
-select location, date, total_cases, new_cases, new_deaths, population
-from [PORTFOLIO PROJECT]..coviddeaths
-order by 1,2
+--Checking covid deaths data with specified columns in the covid death table by ascending order
+SELECT location, date, total_cases, new_cases, new_deaths, population
+FROM [PORTFOLIO PROJECT]..coviddeaths
+ORDER BY 1,2
 
--- calculating death percentage in different locations using data
-select location, date, total_cases, new_deaths, population, (new_deaths/ population) * 100 as deathpercentage
-from [PORTFOLIO PROJECT]..coviddeaths
-order by 1,2
+-- calculating death percentage in different locations using data from covid death table in ascending order
+SELECT location, date, total_cases, new_deaths, population, (new_deaths/ population) * 100 as death_percentage
+FROM [PORTFOLIO PROJECT]..coviddeaths
+ORDER BY 1,2
 
--- new cases data  vs new deaths data 
-select location, new_cases, new_deaths, population, (new_deaths/ new_cases) * 100 as newcasenewdeathpercentage
-from [PORTFOLIO PROJECT]..coviddeaths
-order by 1,2
+-- Calculating new cases data  vs new deaths data, percentage in different locations using data from the  covid death table
+SELECT location, new_cases, new_deaths, population, (new_deaths/ new_cases) * 100 as newcase_newdeath_percentage
+FROM [PORTFOLIO PROJECT]..coviddeaths
+ORDER BY 1,2
 
 
---Data on location with the highest death rate and deathpercentage
-select location, MAX(new_deaths) as deathrate, population, MAX((new_deaths/ population)) * 100 as deathpercentage
-from [PORTFOLIO PROJECT]..coviddeaths
-where continent is not null
-group by location, population
-order by deathrate desc
+-- Showing Data on location with the highest death rate and death percentage
+SELECT location, MAX(new_deaths) as deathrate, population, MAX((new_deaths/ population)) * 100 as death_percentage
+FROM [PORTFOLIO PROJECT]..coviddeaths
+WHERE continent is NOT NULL
+GROUP BY location, population
+ORDER BY deathrate DESC
 
---Looking at Global new cases vs Global new deaths
-select date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobaldeaths
-from [PORTFOLIO PROJECT]..coviddeaths
-group by date
-order by 1,2
+--Showing data on Global new cases vs Global new deaths
+SELECT date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobaldeaths
+FROM [PORTFOLIO PROJECT]..coviddeaths
+GROUP BY date
+ORDER BY 1,2
 
---Looking at the highest global covid death data.
-select date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobaldeaths
-from [PORTFOLIO PROJECT]..coviddeaths
-group by date
-order by totalglobaldeaths desc
+--Showing data on the highest global covid death data.
+SELECT date, SUM(new_cases) as totalglobalnewcases, SUM(cast(new_deaths as int)) as totalglobal_deaths
+FROM [PORTFOLIO PROJECT]..coviddeaths
+GROUP BY date
+ORDER BY totalglobaldeaths DESC
 
 --Global numbers
 select SUM(new_cases) as totalglobalcases, SUM(cast(new_deaths as int)) as totalglobaldeathcase, SUM(cast(new_deaths as int))/SUM(new_cases) * 100 as deathpercentage
